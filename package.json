@@ -6,6 +6,7 @@
     "@actions/github": "^5.0.1",
     "filesize": "^8.0.7",
     "follow-redirects": "^1.15.1",
+    "got": "^12.5.3",
     "yauzl": "^2.10.0"
   }
 }

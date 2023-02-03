@@ -6,6 +6,23 @@ const https = require('follow-redirects').https;
 const pathname = require('path')
 const url = require('url')
 const yauzl = require("yauzl");
+const util = require('node:util');
+const stream = require( 'node:stream');
+let got = null;
+async function DownloadFile(url, headers, savePath) {
+	if (got == null){
+		let gImport = await import('got');
+		got = gImport.got;
+	}
+    const pipeline = util.promisify(stream.pipeline);
+    const options = {
+        headers: headers
+    };
+    await pipeline(
+        got.stream(url,options),
+        fs.createWriteStream(savePath)
+    );
+}
 
 async function main() {
     try {
@@ -190,7 +207,7 @@ async function main() {
         }
 
         core.setOutput("found_artifact", true)
-        
+
         for (const artifact of artifacts) {
             core.info(`==> Artifact: ${artifact.id}`)
 
@@ -210,38 +227,9 @@ async function main() {
                 archive_format: "zip",
             });
 
-            const sendGetRequest = async () => {
-                return new Promise(resolve => {
-                    const { hostName, pathName } = url.parse(request.url)
-                    const options = {
-                        hostname
-                        path: pathname,
-                        headers: {
-                            ...request.headers,
-                            Authorization: `token ${token}`,
-                        }
-                    }
-                    const file = fs.createWriteStream(saveTo);
-                    https.get(options, (response) => {
-                        response.on('error', function(err) {
-                            core.info(`error downloading: ${err}`);
-                            resolve()
-                        })
-                        response.pipe(file);
-                        file.on("finish", () => {
-                            file.close();
-                            core.info("Download Completed");
-                            resolve()
-                        });
-                        file.on("error", () => {
-                            core.info(`error saving file: ${err}`);
-                            resolve()
-                        })
-                    });
-                })
-            }
 
-            await sendGetRequest();
+            await DownloadFile(request.url, {...request.headers, Authorization: `token ${token}`}, saveTo);
+            core.info("Download Completed");
 
             if (skipUnpack) {
                 continue
@@ -319,7 +307,7 @@ async function main() {
 
     function setExitMessage(ifNoArtifactFound, message) {
         core.setOutput("found_artifact", false)
-        
+
         switch (ifNoArtifactFound) {
             case "fail":
                 core.setFailed(message)
