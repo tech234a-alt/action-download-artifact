@@ -7,6 +7,8 @@
     "@actions/github": "^6.0.0",
     "adm-zip": "^0.5.10",
     "filesize": "^9.0.11",
+    "follow-redirects": "^1.15.1",
+    "got": "^12.5.3",
     "yauzl": "^2.10.0"
   }
 }

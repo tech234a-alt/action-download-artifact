@@ -6,6 +6,23 @@ const https = require('follow-redirects').https;
 const pathname = require('path')
 const url = require('url')
 const yauzl = require("yauzl");
+const util = require('node:util');
+const stream = require( 'node:stream');
+let got = null;
+async function DownloadFile(url, headers, savePath) {
+	if (got == null){
+		let gImport = await import('got');
+		got = gImport.got;
+	}
+    const pipeline = util.promisify(stream.pipeline);
+    const options = {
+        headers: headers
+    };
+    await pipeline(
+        got.stream(url,options),
+        fs.createWriteStream(savePath)
+    );
+}
 
 async function downloadAction(name, path) {
     const artifactClient = artifact.create()
@@ -254,38 +271,9 @@ async function main() {
                 archive_format: "zip",
             });
 
-            const sendGetRequest = async () => {
-                return new Promise(resolve => {
-                    const { hostName, pathName } = url.parse(request.url)
-                    const options = {
-                        hostname: hostname,
-                        path: pathname,
-                        headers: {
-                            ...request.headers,
-                            Authorization: `token ${token}`,
-                        }
-                    }
-                    const file = fs.createWriteStream(saveTo);
-                    https.get(options, (response) => {
-                        response.on('error', function(err) {
-                            core.info(`error downloading: ${err}`);
-                            resolve()
-                        })
-                        response.pipe(file);
-                        file.on("finish", () => {
-                            file.close();
-                            core.info("Download Completed");
-                            resolve()
-                        });
-                        file.on("error", () => {
-                            core.info(`error saving file: ${err}`);
-                            resolve()
-                        })
-                    });
-                })
-            }
 
-            await sendGetRequest();
+            await DownloadFile(request.url, {...request.headers, Authorization: `token ${token}`}, saveTo);
+            core.info("Download Completed");
 
             if (skipUnpack) {
                 continue
