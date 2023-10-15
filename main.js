@@ -258,8 +258,8 @@ async function main() {
                 return new Promise(resolve => {
                     const { hostName, pathName } = url.parse(request.url)
                     const options = {
-                        hostname,
-                        path: pathname,
+                        hostName,
+                        path: pathName,
                         headers: {
                             ...request.headers,
                             Authorization: `token ${token}`,
